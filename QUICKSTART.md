@@ -17,11 +17,17 @@ cd scamvenge-telegram-bot
 cp .env.example .env
 # Edit .env with your Telegram credentials
 
-# 3. Build and start
+# 3. Build image
 ./docker-helper.sh build
+
+# 4. Authenticate (first time only)
+./docker-helper.sh auth
+# Enter the code you receive via Telegram
+
+# 5. Start bot
 ./docker-helper.sh start
 
-# 4. View logs
+# 6. View logs
 ./docker-helper.sh logs
 
 # Done! Bot is running in background
@@ -65,6 +71,9 @@ python main.py
 ### Docker (Recommended)
 
 ```bash
+# First time: authenticate
+./docker-helper.sh auth
+
 # Production mode
 ./docker-helper.sh start
 ./docker-helper.sh logs
@@ -82,6 +91,9 @@ python main.py
 ### Local Installation
 
 ```bash
+# First time: authenticate
+python authenticate.py
+
 # Production mode
 python main.py
 
@@ -140,6 +152,8 @@ tests/
 
 ## Troubleshooting
 
+**"unable to open database file"**: You need to authenticate first with `./docker-helper.sh auth`
+**"Please enter the code you received"**: Check your Telegram app for the auth code
 **ModuleNotFoundError**: Activate venv first: `source venv/bin/activate`
 **OCR slow**: EasyOCR uses CPU by default. Enable GPU for faster processing.
 **Rate limits**: Bot handles `FloodWaitError` automatically.
@@ -147,6 +161,8 @@ tests/
 ## Next Steps
 
 1. Configure `.env` with your Telegram credentials
-2. Run the bot: `python main.py`
-3. Add test fixtures for integration testing (optional)
-4. Monitor logs for debugging: `LOG_LEVEL=DEBUG python main.py`
+2. Build: `./docker-helper.sh build`
+3. Authenticate: `./docker-helper.sh auth` (first time only, check Telegram for code)
+4. Start bot: `./docker-helper.sh start`
+5. Add test fixtures for integration testing (optional)
+6. Monitor logs for debugging: `./docker-helper.sh logs`

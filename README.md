@@ -68,14 +68,21 @@ cp .env.example .env
 # Edit .env with your Telegram API credentials
 ```
 
-3. **Build and run**
+3. **Build Docker image**
 ```bash
-# Using helper script (recommended)
 ./docker-helper.sh build
-./docker-helper.sh start
+```
 
-# Or using docker-compose directly
-docker-compose up -d
+4. **First-time authentication**
+```bash
+# Authenticate your Telegram account (one-time setup)
+./docker-helper.sh auth
+# Enter the code you receive via Telegram
+```
+
+5. **Start the bot**
+```bash
+./docker-helper.sh start
 ```
 
 **Docker benefits:**
@@ -104,13 +111,19 @@ API_ID=12345678                    # Your Telegram API ID
 API_HASH=abcdef1234567890...       # Your Telegram API Hash
 PHONE_NUMBER=+1234567890           # Your phone number (with country code)
 
-SOURCE_GROUP=Alloy                 # Group to monitor
-TARGET_USER=Imelda                 # User to forward messages to
+SOURCE_GROUP=Alloy                 # Group to monitor (exact name, @username, or ID)
+TARGET_USER=Imelda                 # User to forward to (exact name, @username, or ID)
 
 DATABASE_PATH=./data/stores.db     # SQLite database path
 TEST_MODE=false                    # Set to 'true' for dry run (no forwarding)
 LOG_LEVEL=INFO                     # Logging level (DEBUG, INFO, WARNING, ERROR)
 ```
+
+**Note:** For `SOURCE_GROUP` and `TARGET_USER`:
+- Use exact names: `Alloy`, `Imelda` (bot will search your chats)
+- Use @usernames: `@alloy_group`, `@imelda`
+- Use numeric IDs: `123456789`
+- Group/channel names are case-insensitive and support partial matching
 
 ### Test Mode
 

@@ -74,6 +74,14 @@ logs() {
     docker-compose logs -f --tail=100
 }
 
+# Authenticate with Telegram (interactive)
+auth() {
+    check_env
+    print_msg "🔐 Starting Telegram authentication..."
+    print_warning "You will be prompted for a code sent to your Telegram account"
+    docker-compose run --rm telegram-bot python authenticate.py
+}
+
 # Run in test mode
 test() {
     check_env
@@ -124,6 +132,7 @@ Usage: ./docker-helper.sh [command]
 
 Commands:
   build       Build the Docker image
+  auth        Authenticate with Telegram (first-time setup)
   start       Start bot in detached mode (background)
   run         Start bot in foreground (with logs)
   stop        Stop the bot
@@ -138,6 +147,7 @@ Commands:
 
 Examples:
   ./docker-helper.sh build         # Build image
+  ./docker-helper.sh auth          # Authenticate (first time)
   ./docker-helper.sh start         # Start in background
   ./docker-helper.sh logs          # View logs
   ./docker-helper.sh test          # Test mode (no forwarding)
@@ -150,6 +160,9 @@ EOF
 case "${1:-help}" in
     build)
         build
+        ;;
+    auth)
+        auth
         ;;
     start)
         start

@@ -35,19 +35,20 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY src/ ./src/
 COPY tests/ ./tests/
-COPY main.py .
-
-# Create directories for data and temp files
-RUN mkdir -p /app/data /app/temp
+COPY main.py authenticate.py ./
 
 # Run as non-root user for security
 RUN useradd -m -u 1000 botuser && \
     chown -R botuser:botuser /app
+
 USER botuser
 
+# Create directories for data and temp files (as botuser)
+RUN mkdir -p /app/data /app/temp
+
 # Health check (optional - checks if process is running)
-HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
-    CMD pgrep -f "python main.py" || exit 1
+HEALTHCHECK --interval=60s --timeout=10s --start-period=60s --retries=3 \
+    CMD pgrep -f "python" > /dev/null || exit 1
 
 # Default command
 CMD ["python", "main.py"]

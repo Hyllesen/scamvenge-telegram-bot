@@ -7,6 +7,8 @@ services:
       dockerfile: Dockerfile
     container_name: telegram-store-bot
     restart: unless-stopped
+    # Run as host user to avoid permission issues with session files
+    user: "${PUID:-1000}:${PGID:-1000}"
     
     # Environment variables (override with .env file)
     env_file:
@@ -16,9 +18,8 @@ services:
     volumes:
       # Database persistence
       - ./data:/app/data
-      # Telegram session persistence
-      - ./bot_session.session:/app/bot_session.session
-      - ./bot_session.session-journal:/app/bot_session.session-journal
+      # Telegram session persistence - use directory mount (works better on Mac/Windows)
+      - ./.sessions:/app/.sessions:rw
       # Test fixtures (optional)
       - ./tests/fixtures:/app/tests/fixtures:ro
       # Logs (optional)

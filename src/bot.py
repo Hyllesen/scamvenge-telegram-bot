@@ -9,6 +9,7 @@ from typing import Optional
 from telethon import TelegramClient, events
 from telethon.errors import FloodWaitError
 from telethon.tl.types import User, Channel, Chat
+from telethon.tl.functions.contacts import SearchRequest
 from dotenv import load_dotenv
 
 from .processor import ImageProcessor
@@ -53,8 +54,11 @@ class TelegramBot:
         # Create data directory if it doesn't exist
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         
+        # Create .sessions directory for Telegram session files
+        Path('.sessions').mkdir(parents=True, exist_ok=True)
+        
         # Initialize components
-        self.client = TelegramClient('bot_session', int(self.api_id), self.api_hash)
+        self.client = TelegramClient('.sessions/bot_session', int(self.api_id), self.api_hash)
         self.processor = None  # Initialize after client starts (to check GPU availability)
         self.database = StoreDatabase(self.db_path)
         
@@ -105,18 +109,73 @@ class TelegramBot:
     async def _verify_entities(self):
         """Verify that source group and target user exist."""
         try:
-            # Try to get source group
-            source_entity = await self.client.get_entity(self.source_group)
+            # Try to get source group (try multiple methods)
+            source_entity = await self._get_group_entity(self.source_group)
             logger.info(f"Source group found: {self._get_entity_name(source_entity)}")
             
             # Try to get target user
-            target_entity = await self.client.get_entity(self.target_user)
+            target_entity = await self._get_user_entity(self.target_user)
             logger.info(f"Target user found: {self._get_entity_name(target_entity)}")
             
         except Exception as e:
             logger.error(f"Failed to verify entities: {e}")
-            logger.error("Make sure SOURCE_GROUP and TARGET_USER are correct")
+            logger.error("Make sure SOURCE_GROUP and TARGET_USER are correct in .env")
+            logger.info("Hint: Use @username format or exact group/user name")
             raise
+    
+    async def _get_group_entity(self, identifier: str):
+        """Get a group/channel entity by various identifiers."""
+        try:
+            # First, try as-is (works for @username, IDs, exact titles)
+            return await self.client.get_entity(identifier)
+        except Exception as e1:
+            logger.debug(f"Failed to get group as '{identifier}': {e1}")
+            
+            # Try with @ prefix if not present
+            if not identifier.startswith('@'):
+                try:
+                    return await self.client.get_entity(f'@{identifier}')
+                except Exception as e2:
+                    logger.debug(f"Failed with @{identifier}: {e2}")
+            
+            # Last resort: search through all dialogs
+            logger.info(f"Searching for group '{identifier}' in your chats...")
+            async for dialog in self.client.iter_dialogs():
+                if dialog.is_group or dialog.is_channel:
+                    # Match by title (case-insensitive)
+                    if dialog.title and identifier.lower() in dialog.title.lower():
+                        logger.info(f"Found matching group: {dialog.title}")
+                        return dialog.entity
+            
+            raise ValueError(f"Could not find group/channel: {identifier}")
+    
+    async def _get_user_entity(self, identifier: str):
+        """Get a user entity by various identifiers."""
+        try:
+            # First, try as-is (works for @username, IDs, phone numbers)
+            return await self.client.get_entity(identifier)
+        except Exception as e1:
+            logger.debug(f"Failed to get user as '{identifier}': {e1}")
+            
+            # Try with @ prefix if not present
+            if not identifier.startswith('@'):
+                try:
+                    return await self.client.get_entity(f'@{identifier}')
+                except Exception as e2:
+                    logger.debug(f"Failed with @{identifier}: {e2}")
+            
+            # Last resort: search through contacts/dialogs
+            logger.info(f"Searching for user '{identifier}' in your contacts...")
+            async for dialog in self.client.iter_dialogs():
+                if dialog.is_user and not dialog.entity.bot:
+                    # Match by name or username (case-insensitive)
+                    user = dialog.entity
+                    if (user.username and identifier.lower() in user.username.lower()) or \
+                       (user.first_name and identifier.lower() in user.first_name.lower()):
+                        logger.info(f"Found matching user: {self._get_entity_name(user)}")
+                        return user
+            
+            raise ValueError(f"Could not find user: {identifier}")
     
     @staticmethod
     def _get_entity_name(entity) -> str:
