@@ -38,10 +38,6 @@ Thumbs.db
 *.md
 !README.md
 
-# Test files (use volume mounts instead)
-tests/
-!tests/fixtures/
-
 # CI/CD
 .github/
 .gitlab-ci.yml

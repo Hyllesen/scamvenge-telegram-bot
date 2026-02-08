@@ -12,7 +12,7 @@ from src.exceptions import InvalidImageError
 # UPDATE THIS when adding new fixture images
 EXPECTED_RESULTS = {
     'QYIQ_items.jpg': 'QYIQ',
-    'alien_artificial_flow_following.jpg': 'alien artificial flow',
+    'colour_sticker_following.jpg': 'colour sticker',
     'zhi_heng_following.jpg': 'zhi heng',
     # Add your fixtures here
 }

@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    libgl1-mesa-glx \
+    libgl1 \
     # Image processing
     libglib2.0-0 \
     # Cleanup
@@ -34,10 +34,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY src/ ./src/
+COPY tests/ ./tests/
 COPY main.py .
 
 # Create directories for data and temp files
-RUN mkdir -p /app/data /app/temp /app/tests/fixtures
+RUN mkdir -p /app/data /app/temp
 
 # Run as non-root user for security
 RUN useradd -m -u 1000 botuser && \
