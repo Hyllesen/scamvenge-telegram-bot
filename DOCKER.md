@@ -408,10 +408,36 @@ docker-compose build --no-cache
 ```
 
 ### Database Permission Issues
+
+**Problem:** `unable to open database file` error on Linux VPS.
+
+**Cause:** Container runs as UID 1000 by default, but your VPS user is different (often root = UID 0).
+
+**Solution 1 - Run as Root (Recommended for VPS):**
 ```bash
-# Fix permissions
-chmod 755 data/
-chmod 644 data/*.db
+# Add to your .env file:
+echo "PUID=0" >> .env
+echo "PGID=0" >> .env
+
+# Restart
+./docker-helper.sh stop
+./docker-helper.sh start
+```
+
+**Solution 2 - Fix Directory Permissions:**
+```bash
+# Create directories with proper ownership
+mkdir -p data .sessions logs temp
+chown -R 1000:1000 data/ .sessions/ logs/ temp/
+chmod -R 755 data/ .sessions/ logs/ temp/
+```
+
+**Solution 3 - Match Host User:**
+```bash
+# Set PUID/PGID to your current user
+echo "PUID=$(id -u)" >> .env
+echo "PGID=$(id -g)" >> .env
+./docker-helper.sh restart
 ```
 
 ### Out of Disk Space
