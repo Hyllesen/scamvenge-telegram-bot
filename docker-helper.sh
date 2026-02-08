@@ -22,6 +22,22 @@ print_warning() {
     echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
+# Detect Docker Compose command (v2 vs v1)
+detect_compose_cmd() {
+    if docker compose version &>/dev/null; then
+        echo "docker compose"
+    elif docker-compose version &>/dev/null; then
+        echo "docker-compose"
+    else
+        print_error "Docker Compose not found!"
+        print_error "Please install Docker Compose: https://docs.docker.com/compose/install/"
+        exit 1
+    fi
+}
+
+# Get Docker Compose command
+DOCKER_COMPOSE=$(detect_compose_cmd)
+
 # Check if .env exists
 check_env() {
     if [ ! -f .env ]; then
@@ -36,7 +52,7 @@ check_env() {
 # Build the Docker image
 build() {
     print_msg "Building Docker image..."
-    docker-compose build
+    $DOCKER_COMPOSE build
     print_msg "Build complete!"
 }
 
@@ -44,7 +60,7 @@ build() {
 start() {
     check_env
     print_msg "Starting bot in detached mode..."
-    docker-compose up -d
+    $DOCKER_COMPOSE up -d
     print_msg "Bot started! Use './docker-helper.sh logs' to view logs"
 }
 
@@ -52,26 +68,26 @@ start() {
 run() {
     check_env
     print_msg "Starting bot in foreground..."
-    docker-compose up
+    $DOCKER_COMPOSE up
 }
 
 # Stop the bot
 stop() {
     print_msg "Stopping bot..."
-    docker-compose down
+    $DOCKER_COMPOSE down
     print_msg "Bot stopped!"
 }
 
 # Restart the bot
 restart() {
     print_msg "Restarting bot..."
-    docker-compose restart
+    $DOCKER_COMPOSE restart
     print_msg "Bot restarted!"
 }
 
 # View logs
 logs() {
-    docker-compose logs -f --tail=100
+    $DOCKER_COMPOSE logs -f --tail=100
 }
 
 # Authenticate with Telegram (interactive)
@@ -79,26 +95,26 @@ auth() {
     check_env
     print_msg "🔐 Starting Telegram authentication..."
     print_warning "You will be prompted for a code sent to your Telegram account"
-    docker-compose run --rm telegram-bot python authenticate.py
+    $DOCKER_COMPOSE run --rm telegram-bot python authenticate.py
 }
 
 # Run in test mode
 test() {
     check_env
     print_warning "Starting bot in TEST MODE (no forwarding, no database writes)"
-    docker-compose run --rm -e TEST_MODE=true telegram-bot
+    $DOCKER_COMPOSE run --rm -e TEST_MODE=true telegram-bot
 }
 
 # Run tests
 run_tests() {
     print_msg "Running tests in Docker..."
-    docker-compose run --rm telegram-bot pytest -v
+    $DOCKER_COMPOSE run --rm telegram-bot pytest -v
 }
 
 # Shell into container
 shell() {
     print_msg "Opening shell in container..."
-    docker-compose exec telegram-bot /bin/bash
+    $DOCKER_COMPOSE exec telegram-bot /bin/bash
 }
 
 # Clean up (remove containers, volumes, images)
@@ -107,7 +123,7 @@ clean() {
     read -r response
     if [[ "$response" =~ ^[Yy]$ ]]; then
         print_msg "Cleaning up..."
-        docker-compose down -v --rmi local
+        $DOCKER_COMPOSE down -v --rmi local
         print_msg "Cleanup complete!"
     else
         print_msg "Cleanup cancelled"
@@ -117,7 +133,7 @@ clean() {
 # Show status
 status() {
     print_msg "Container status:"
-    docker-compose ps
+    $DOCKER_COMPOSE ps
     echo ""
     print_msg "Resource usage:"
     docker stats --no-stream telegram-store-bot 2>/dev/null || echo "Container not running"

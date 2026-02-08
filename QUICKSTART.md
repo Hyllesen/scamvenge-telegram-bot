@@ -152,6 +152,7 @@ tests/
 
 ## Troubleshooting
 
+**"docker-compose: command not found"**: Script auto-detects v1/v2, use `./docker-helper.sh` commands
 **"unable to open database file"**: You need to authenticate first with `./docker-helper.sh auth`
 **"Please enter the code you received"**: Check your Telegram app for the auth code
 **ModuleNotFoundError**: Activate venv first: `source venv/bin/activate`

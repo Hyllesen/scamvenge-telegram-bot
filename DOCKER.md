@@ -5,13 +5,17 @@ Complete guide for running the Telegram Store Follow Bot with Docker.
 ## Prerequisites
 
 - Docker Engine 20.10+
-- Docker Compose 1.29+
+- Docker Compose v2 (or v1 with `docker-compose` 1.29+)
 
 Check versions:
 ```bash
 docker --version
-docker-compose --version
+docker compose version  # Docker Compose v2
+# OR
+docker-compose --version  # Docker Compose v1
 ```
+
+**Note:** The helper script automatically detects whether you have Docker Compose v2 (`docker compose`) or v1 (`docker-compose`) installed.
 
 ## Quick Start
 
@@ -372,6 +376,24 @@ docker system prune -a
 ```
 
 ## Troubleshooting
+
+### "docker-compose: command not found"
+
+**Problem:** You have Docker Compose v2 but the command is `docker compose` (space) not `docker-compose` (hyphen).
+
+**Solution:** The `docker-helper.sh` script automatically detects and uses the correct command. Just use:
+```bash
+./docker-helper.sh build
+```
+
+If you're running commands manually, use:
+```bash
+# Docker Compose v2 (built into Docker)
+docker compose up -d
+
+# Docker Compose v1 (standalone)
+docker-compose up -d
+```
 
 ### Container Won't Start
 ```bash
