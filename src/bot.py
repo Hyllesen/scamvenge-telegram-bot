@@ -46,7 +46,7 @@ class TelegramBot:
         log_level = os.getenv('LOG_LEVEL', 'INFO')
         logger.setLevel(getattr(logging, log_level))
         
-        # Validate configuration
+        # Validate configuration BEFORE creating Telegram client
         if not all([self.api_id, self.api_hash, self.phone_number]):
             raise ValueError("Missing required environment variables: API_ID, API_HASH, PHONE_NUMBER")
         

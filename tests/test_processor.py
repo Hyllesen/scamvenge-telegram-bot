@@ -162,7 +162,8 @@ class TestImageProcessor(unittest.TestCase):
         ]
         mock_reader_class.return_value = mock_reader
         
-        processor = ImageProcessor(languages=['en'], gpu=False)
+        # Disable cropping for mock tests
+        processor = ImageProcessor(languages=['en'], gpu=False, crop_top=False)
         store_name = processor.process_image("fake_path.jpg")
         
         self.assertEqual(store_name, "Test Store")
@@ -175,7 +176,8 @@ class TestImageProcessor(unittest.TestCase):
         mock_reader.readtext.return_value = []
         mock_reader_class.return_value = mock_reader
         
-        processor = ImageProcessor(languages=['en'], gpu=False)
+        # Disable cropping for mock tests
+        processor = ImageProcessor(languages=['en'], gpu=False, crop_top=False)
         
         with self.assertRaises(InvalidImageError):
             processor.process_image("fake_path.jpg")
@@ -190,7 +192,8 @@ class TestImageProcessor(unittest.TestCase):
         ]
         mock_reader_class.return_value = mock_reader
         
-        processor = ImageProcessor(languages=['en'], gpu=False)
+        # Disable cropping for mock tests
+        processor = ImageProcessor(languages=['en'], gpu=False, crop_top=False)
         
         with self.assertRaises(InvalidImageError):
             processor.process_image("fake_path.jpg")

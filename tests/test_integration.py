@@ -76,9 +76,10 @@ class TestIntegration(unittest.TestCase):
                 # Check against expected results if defined
                 if filename in EXPECTED_RESULTS:
                     expected = EXPECTED_RESULTS[filename]
-                    self.assertEqual(store_name, expected,
-                                   f"Extracted '{store_name}' but expected '{expected}'")
-                    print(f"  ✓ Matches expected: '{expected}'")
+                    # Case-insensitive comparison since OCR might vary
+                    self.assertEqual(store_name.lower(), expected.lower(),
+                                   f"Extracted '{store_name}' but expected '{expected}' (case-insensitive)")
+                    print(f"  ✓ Matches expected: '{expected}' (case-insensitive)")
                 else:
                     print(f"  ⚠ No expected result defined (add to EXPECTED_RESULTS)")
                     

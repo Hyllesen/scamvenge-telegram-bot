@@ -6,6 +6,7 @@ This module is pure logic with no network/Telegram dependencies for testability.
 import re
 from typing import List, Tuple, Optional
 import easyocr
+from PIL import Image
 from .exceptions import InvalidImageError, OCRError
 
 
@@ -18,21 +19,56 @@ class ImageProcessor:
     # UI keywords to exclude when finding store name
     UI_KEYWORDS = ["Following", "Sold", "Items", "Follow", "Message", "Share", "More"]
     
-    def __init__(self, languages: List[str] = None, gpu: bool = False):
+    # Crop to top N% of image to focus on header (where store name is)
+    CROP_TOP_PERCENT = 25  # Only process top 25% of image
+    
+    def __init__(self, languages: List[str] = None, gpu: bool = False, crop_top: bool = True):
         """
         Initialize the OCR reader.
         
         Args:
             languages: List of language codes for OCR (default: ['en'])
             gpu: Whether to use GPU acceleration (default: False)
+            crop_top: Whether to crop to top portion of image (default: True)
         """
         if languages is None:
             languages = ['en']
+        
+        self.crop_top = crop_top
         
         try:
             self.reader = easyocr.Reader(languages, gpu=gpu)
         except Exception as e:
             raise OCRError(f"Failed to initialize EasyOCR reader: {e}")
+    
+    def _crop_image(self, image_path: str) -> str:
+        """
+        Crop image to top portion to focus on header/store name.
+        
+        Args:
+            image_path: Path to original image
+            
+        Returns:
+            Path to cropped image (temporary file)
+        """
+        try:
+            img = Image.open(image_path)
+            width, height = img.size
+            
+            # Crop to top N% of image
+            crop_height = int(height * (self.CROP_TOP_PERCENT / 100))
+            cropped = img.crop((0, 0, width, crop_height))
+            
+            # Save to temporary file
+            import tempfile
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+            cropped.save(temp_file.name)
+            temp_file.close()
+            
+            return temp_file.name
+            
+        except Exception as e:
+            raise OCRError(f"Failed to crop image: {e}")
     
     def validate_keywords(self, ocr_results: List[Tuple]) -> bool:
         """
@@ -146,9 +182,17 @@ class ImageProcessor:
             InvalidImageError: If image is invalid or no keywords found
             OCRError: If OCR processing fails
         """
+        cropped_path = None
         try:
+            # Crop to top portion if enabled
+            if self.crop_top:
+                cropped_path = self._crop_image(image_path)
+                ocr_path = cropped_path
+            else:
+                ocr_path = image_path
+            
             # Run OCR
-            ocr_results = self.reader.readtext(image_path)
+            ocr_results = self.reader.readtext(ocr_path)
             
             if not ocr_results:
                 raise InvalidImageError("No text detected in image")
@@ -165,3 +209,11 @@ class ImageProcessor:
             raise
         except Exception as e:
             raise OCRError(f"OCR processing failed: {e}")
+        finally:
+            # Cleanup temporary cropped file
+            if cropped_path:
+                try:
+                    import os
+                    os.unlink(cropped_path)
+                except:
+                    pass
