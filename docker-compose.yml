@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-store-bot
+    restart: unless-stopped
+    
+    # Environment variables (override with .env file)
+    env_file:
+      - .env
+    
+    # Volumes for persistence
+    volumes:
+      # Database persistence
+      - ./data:/app/data
+      # Telegram session persistence
+      - ./bot_session.session:/app/bot_session.session
+      - ./bot_session.session-journal:/app/bot_session.session-journal
+      # Test fixtures (optional)
+      - ./tests/fixtures:/app/tests/fixtures:ro
+      # Logs (optional)
+      - ./logs:/app/logs
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Resource limits (optional, adjust as needed)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1.0'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 1G
+
+# Optional: Network configuration
+# networks:
+#   telegram-network:
+#     driver: bridge
