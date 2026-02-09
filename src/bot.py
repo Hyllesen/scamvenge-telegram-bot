@@ -309,7 +309,7 @@ class TelegramBot:
         
         Args:
             photo_path: Path to image file to send
-            store_name: Extracted store name to include in caption
+            store_name: Extracted store name (used for logging only)
             
         Returns:
             Sent message object, or None if failed
@@ -318,8 +318,7 @@ class TelegramBot:
             target_entity = await self.client.get_entity(self.target_user)
             sent = await self.client.send_file(
                 target_entity,
-                photo_path,
-                caption=f"New store: {store_name}"
+                photo_path
             )
             logger.debug(f"Image sent (ID: {sent.id})")
             return sent
