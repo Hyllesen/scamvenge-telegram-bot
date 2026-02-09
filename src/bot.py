@@ -66,6 +66,10 @@ class TelegramBot:
         self.temp_dir = Path('./temp')
         self.temp_dir.mkdir(exist_ok=True)
         
+        # Images directory for permanent storage
+        self.images_dir = Path('./data/images')
+        self.images_dir.mkdir(parents=True, exist_ok=True)
+        
         logger.info("Bot initialized successfully")
     
     async def start(self):
@@ -213,23 +217,26 @@ class TelegramBot:
     
     async def _download_photo(self, message) -> Optional[Path]:
         """
-        Download photo from message.
+        Download photo from message and save to permanent storage.
         
         Args:
             message: Telegram message object
             
         Returns:
-            Path to downloaded photo, or None if failed
+            Path to saved photo in permanent storage, or None if failed
         """
         try:
-            # Generate unique filename
-            photo_path = self.temp_dir / f"photo_{message.id}.jpg"
+            # Generate unique filename with timestamp
+            from datetime import datetime
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"photo_{message.id}_{timestamp}.jpg"
             
-            # Download
-            await self.client.download_media(message.photo, photo_path)
-            logger.debug(f"Photo downloaded: {photo_path}")
+            # Download directly to permanent images directory
+            saved_path = self.images_dir / filename
+            await self.client.download_media(message.photo, saved_path)
+            logger.info(f"Image saved to: {saved_path}")
             
-            return photo_path
+            return saved_path
             
         except Exception as e:
             logger.error(f"Failed to download photo: {e}")
@@ -237,11 +244,11 @@ class TelegramBot:
     
     async def _process_photo(self, message, photo_path: Path):
         """
-        Process downloaded photo: OCR, validate, check duplicates, forward.
+        Process downloaded photo: OCR, validate, check duplicates, send to user.
         
         Args:
             message: Original Telegram message
-            photo_path: Path to downloaded photo
+            photo_path: Path to saved photo
         """
         try:
             # Run OCR and extract store name
@@ -262,23 +269,24 @@ class TelegramBot:
             if self.test_mode:
                 # Test mode: Log what would happen, don't actually do it
                 logger.info("="*60)
-                logger.info(f"🧪 TEST MODE: Would forward to '{self.target_user}'")
+                logger.info(f"🧪 TEST MODE: Would send image to '{self.target_user}'")
                 logger.info(f"   Store Name: '{store_name}'")
                 logger.info(f"   Original Message ID: {message.id}")
+                logger.info(f"   Saved Image: {photo_path}")
                 logger.info(f"   Would save to database: {self.db_path}")
-                logger.info("   ✅ UNIQUE - Would be forwarded in production mode")
+                logger.info("   ✅ UNIQUE - Would be sent in production mode")
                 logger.info("="*60)
             else:
-                # Production mode: Actually forward and save
-                logger.info(f"Forwarding new store '{store_name}' to {self.target_user}...")
-                forwarded_msg = await self._forward_message(message)
+                # Production mode: Actually send image and save
+                logger.info(f"Sending new store '{store_name}' to {self.target_user}...")
+                sent_msg = await self._send_image(photo_path, store_name)
                 
-                if forwarded_msg:
+                if sent_msg:
                     # Save to database
                     self.database.add_store(
                         store_name=store_name,
                         original_message_id=message.id,
-                        forwarded_message_id=forwarded_msg.id
+                        forwarded_message_id=sent_msg.id
                     )
                     logger.info(f"Successfully processed and saved: '{store_name}'")
                     
@@ -294,30 +302,30 @@ class TelegramBot:
             logger.error(f"Database error: {e}")
         except Exception as e:
             logger.error(f"Unexpected error processing photo: {e}", exc_info=True)
-        finally:
-            # Cleanup downloaded file
-            if photo_path and photo_path.exists():
-                photo_path.unlink()
-                logger.debug(f"Cleaned up: {photo_path}")
     
-    async def _forward_message(self, message):
+    async def _send_image(self, photo_path: Path, store_name: str):
         """
-        Forward message to target user.
+        Send image as a new message to target user.
         
         Args:
-            message: Message to forward
+            photo_path: Path to image file to send
+            store_name: Extracted store name to include in caption
             
         Returns:
-            Forwarded message object, or None if failed
+            Sent message object, or None if failed
         """
         try:
             target_entity = await self.client.get_entity(self.target_user)
-            forwarded = await self.client.forward_messages(target_entity, message)
-            logger.debug(f"Message forwarded (ID: {forwarded.id})")
-            return forwarded
+            sent = await self.client.send_file(
+                target_entity,
+                photo_path,
+                caption=f"New store: {store_name}"
+            )
+            logger.debug(f"Image sent (ID: {sent.id})")
+            return sent
             
         except Exception as e:
-            logger.error(f"Failed to forward message: {e}")
+            logger.error(f"Failed to send image: {e}")
             return None
     
     def cleanup(self):

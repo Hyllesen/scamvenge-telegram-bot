@@ -6,6 +6,7 @@ A modular Python bot that automates monitoring a Telegram group for "Store Follo
 
 - 🤖 Automated Telegram group monitoring
 - 🔍 OCR-based text extraction using EasyOCR
+- 💾 Automatic image saving (all received images stored in `./data/images/`)
 - ✅ Keyword validation for "Store Follow" screenshots
 - 📊 Font size heuristic for store name extraction
 - 🔄 Fuzzy duplicate detection (~90% similarity)
@@ -238,7 +239,9 @@ scamvenge-telegram-bot/
 │   ├── test_database.py    # Database tests
 │   ├── test_integration.py # Real OCR tests
 │   └── fixtures/           # Sample images for testing
-├── data/                   # Database storage (created on first run)
+├── data/
+│   ├── stores.db           # Database storage (created on first run)
+│   └── images/             # Saved images from Telegram (created on first run)
 ├── requirements.txt        # Python dependencies
 ├── .env.example           # Environment template
 ├── .gitignore
@@ -249,13 +252,13 @@ scamvenge-telegram-bot/
 ## How It Works
 
 1. **Monitoring**: Bot listens to the "Alloy" group for photo messages
-2. **Download**: Photos are downloaded to a temporary location
+2. **Download & Save**: Photos are downloaded and saved to `./data/images/` with unique filenames
 3. **OCR**: EasyOCR extracts text from the image
 4. **Validation**: Checks for keywords ("Following", "Sold", "Items")
 5. **Extraction**: Identifies store name (largest text element, excluding UI keywords)
 6. **Duplicate Check**: Fuzzy matching against database (~90% similarity)
-7. **Forward**: If unique, forwards to "Imelda" and saves to database
-8. **Cleanup**: Temporary files are removed
+7. **Send**: If unique, sends the saved image as a new message to "Imelda" with store name caption
+8. **Save to DB**: Records the store name and message IDs in the database
 
 ## OCR Accuracy
 
