@@ -8,6 +8,7 @@ services:
     container_name: telegram-store-bot
     restart: unless-stopped
     # Run as host user to avoid permission issues with session files
+    # Set PUID and PGID in .env file (run `id -u` and `id -g` to find your IDs)
     user: "${PUID:-1000}:${PGID:-1000}"
     
     # Environment variables (override with .env file)

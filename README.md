@@ -74,6 +74,11 @@ cp .env.example .env
 ./docker-helper.sh build
 ```
 
+**Note for Linux/VPS users:** If you encounter permission errors, run the fix script first:
+```bash
+./fix-permissions.sh
+```
+
 4. **First-time authentication**
 ```bash
 # Authenticate your Telegram account (one-time setup)
@@ -298,6 +303,43 @@ Adjust the threshold in `src/database.py` if needed.
 
 **Docker Installation:**
 
+**Issue**: `Fatal error: unable to open database file` or `attempt to write a readonly database`
+- This is a permission issue with the Docker volumes
+- **Quick fix (running as root on VPS):**
+  ```bash
+  # Add to .env file
+  echo "PUID=0" >> .env
+  echo "PGID=0" >> .env
+  
+  # Create directories
+  mkdir -p data data/images .sessions logs
+  chmod -R 755 data .sessions logs
+  
+  # Restart container
+  docker-compose down && docker-compose up -d
+  ```
+- **Better fix (running as non-root user):**
+  ```bash
+  # Create user matching container UID
+  useradd -m -u 1000 botuser
+  
+  # Set ownership
+  chown -R 1000:1000 data .sessions logs
+  chmod -R 755 data .sessions logs
+  
+  # Ensure .env has PUID=1000 and PGID=1000
+  # Then restart: docker-compose down && docker-compose up -d
+  ```
+- **On Mac/Linux (non-root):**
+  ```bash
+  # Run the fix script
+  ./fix-permissions.sh
+  
+  # Or manually set your user ID in .env
+  echo "PUID=$(id -u)" >> .env
+  echo "PGID=$(id -g)" >> .env
+  ```
+
 **Issue**: Container fails to start
 - Check `.env` file exists and has valid credentials
 - Check logs: `docker-compose logs`
@@ -317,6 +359,10 @@ Adjust the threshold in `src/database.py` if needed.
 **Issue**: Cannot connect to Telegram
 - Check firewall settings
 - Ensure container has internet access
+
+**Issue**: `You can't forward messages from a protected chat`
+- This has been fixed - the bot now sends images as new messages instead of forwarding
+- Make sure you're running the latest version of the code
 
 ## Testing Notes
 
